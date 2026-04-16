@@ -525,22 +525,25 @@ function selectType(type, btn) {
 }
 
 function onFileSelect(input) {
-  if (input.files && input.files[0]) {
-    selectedFile = input.files[0];
-    document.getElementById('uploadTitle').textContent = '';
-    document.getElementById('uploadSub').textContent = '';
-    document.querySelector('.upload-icon').style.display = 'none';
+  const file = input.files && input.files[0];
+  if (!file) return;
+  selectedFile = file;
+  updateUploadZone(file.name);
+  document.getElementById('submitBtn').disabled = false;
+}
 
-    const inner = document.getElementById('uploadZone');
-    let fileSpan = inner.querySelector('.file-selected');
-    if (!fileSpan) {
-      fileSpan = document.createElement('div');
-      fileSpan.className = 'file-selected';
-      inner.appendChild(fileSpan);
-    }
-    fileSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>${selectedFile.name}`;
-    document.getElementById('submitBtn').disabled = false;
+function updateUploadZone(name) {
+  document.getElementById('uploadTitle').textContent = '';
+  document.getElementById('uploadSub').textContent = '';
+  document.querySelector('.upload-icon').style.display = 'none';
+  const inner = document.getElementById('uploadZone');
+  let fileSpan = inner.querySelector('.file-selected');
+  if (!fileSpan) {
+    fileSpan = document.createElement('div');
+    fileSpan.className = 'file-selected';
+    inner.appendChild(fileSpan);
   }
+  fileSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>${name}`;
 }
 
 // Drag and drop
@@ -553,21 +556,24 @@ zone.addEventListener('drop', e => {
   const file = e.dataTransfer.files[0];
   if (file && file.name.endsWith('.pdf')) {
     selectedFile = file;
-    const fakeInput = { files: [file] };
-    onFileSelect(fakeInput);
+    updateUploadZone(file.name);
+    document.getElementById('submitBtn').disabled = false;
   }
 });
 
 async function submitDocument() {
   const apiKey = document.getElementById('apiKey').value.trim();
   if (!apiKey) { showError('Please enter your API key.'); return; }
-  if (!selectedFile) { showError('Please select a PDF file.'); return; }
+
+  const fileInput = document.getElementById('fileInput');
+  const file = selectedFile || (fileInput.files && fileInput.files[0]);
+  if (!file) { showError('Please select a PDF file.'); return; }
 
   setLoading(true);
   hideError();
 
   const formData = new FormData();
-  formData.append('file', selectedFile);
+  formData.append('file', file);
 
   try {
     const res = await fetch(
